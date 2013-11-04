@@ -10,6 +10,7 @@ require 'pry'
 require 'active_support/core_ext'
 require 'base64'
 require 'securerandom'
+require 'pry'
 
 class SyncStudipLDAP < Thor
 
