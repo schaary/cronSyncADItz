@@ -230,7 +230,7 @@ private
   end
 
   def get_personal_dn uid
-    @redis.hget LDAP_DN_BY_UID_HASH uid
+    @redis.hget LDAP_DN_BY_UID_HASH, uid
   end
 
   def missing_entries
