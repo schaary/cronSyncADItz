@@ -12,8 +12,9 @@ require 'base64'
 require 'securerandom'
 require 'pry'
 
-class SyncStudipLDAP < Thor
+class SyncADItz < Thor
 
+  SERVICE = self.name
   LDAP_CHECKSUM_SET = 'ad_itz:s_checksum_ldap_ad_itz'
   LDAP_UID_SET      = 'ad_itz:s_uid_ldap_ad_itz'
   LDAP_DN_BY_UID_HASH = 'ad_itz:h_dn_by_uid'
@@ -46,7 +47,7 @@ class SyncStudipLDAP < Thor
 
     unless 0 == missing_entries.size
       puts "[ERROR] there are missing entries left."
-      puts "[ERROR] run 'sync_studip_ldap new' first"
+      puts "[ERROR] run 'sync_ad_itz new' first"
       exit
     end
 
@@ -245,4 +246,4 @@ private
   end
 end
 
-SyncStudipLDAP.start
+SyncADItz.start
