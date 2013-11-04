@@ -33,7 +33,8 @@ class SyncADItz < Thor
     missing_entries.each do |uid|
       counter += 1
       puts "#{counter}: #{uid}"
-      #write_new_entry uid
+
+      write_new_entry uid
     end
 
     puts "Es wurden #{counter} neue Eintraege geschrieben"
@@ -54,10 +55,10 @@ class SyncADItz < Thor
     counter = 0
     update_candidates.each do |checksum|
       counter += 1
-      #write_update_entry checksum
+      write_update_entry checksum
     end
 
-    puts "Es wurden #{counter} Eintraege geupdated"
+    puts "Es wurden #{counter} Eintraege erneuert"
   end
 
 private
@@ -162,49 +163,38 @@ private
 
     dn = "cn=#{entry[:nkz]},ou=nutzer,dc=xd,dc=uni-halle,dc=de"
     attributes = {
-      sAMAccountName: entry[:nkz],
-      sn:             entry[:lastname],
-      givenname:      entry[:firstname],
-      cn:             entry[:nkz],
+      samaccountname:     entry[:nkz],
+      sn:                 entry[:lastname],
+      givenname:          entry[:firstname],
+      cn:                 entry[:nkz],
       useraccountcontrol: "546",
-      displayname:    "#{entry[:firstname]} #{entry[:lastname]}",
-      userpricipalname: "#{entry[:nkz]}@xd.uni-halle.de",
-      carlicense:     entry[:checksum],
-      mail:       "#{entry[:mail]}",
+      displayname:        "#{entry[:firstname]} #{entry[:lastname]}",
+      userprincipalname:  "#{entry[:nkz]}@xd.uni-halle.de",
+      carlicense:         entry[:checksum],
+      mail:               "#{entry[:mail]}",
       objectClass: [
         "top",
         "person",
         "organizationalPerson",
         "user"]}
 
-    puts dn
-    ap attributes
-    puts ""
-    # unless @ldap.add dn: dn, attributes: attributes.select{ |k,v| !v.empty? }
-    #   puts "Result: #{@ldap.get_operation_result.code}"
-    #   puts "Message: #{@ldap.get_operation_result.message}"
-    # end
+    unless @ldap.add dn: dn, attributes: attributes
+      puts "Result: #{@ldap.get_operation_result.code}"
+      puts "Message: #{@ldap.get_operation_result.message}"
+    end
 
-      # unicodepw:      Base64.encode64('"!' +
-      #                 SecureRandom.hex(20).to_s +
-      #                 '+' +
-      #                 SecureRandom.hex(20).to_s.upcase +
-      #                 '#"'),
+    operations = [[:add, :unicodepw, as_unicodepw(random_string)]]
 
-    puts "Eintrag geschrieben: #{entry[:nkz]}"
-  end
-
-  def get_account_by_checksum checksum
-    JSON.parse(
-      @redis.hget UMT_ACCOUNT_BY_CHECKSUM_HASH, checksum).
-      symbolize_keys
+    unless@ldap.modify dn: dn, operations: operations
+      puts "Result: #{@ldap.get_operation_result.code}"
+      puts "Message: #{@ldap.get_operation_result.message}"
+    end
   end
 
   def write_update_entry checksum
     entry = get_account_by_checksum checksum
 
     dn = get_personal_dn entry[:nkz]
-    puts "Eintrag geholt: #{entry[:nkz]}"
 
     operations = [
       [:replace, :givenname, entry[:firstname]],
@@ -213,12 +203,10 @@ private
       [:replace, :cn, "#{entry[:firstname]} #{entry[:lastname]}"],
       [:replace, :carlicense, entry[:checksum]]]
 
-    ap operations
-
-    # unless @ldap.modify dn: dn, operations: operations
-    #   puts "Result: #{@ldap.get_operation_result.code}"
-    #   puts "Message: #{@ldap.get_operation_result.message}"
-    # end
+    unless @ldap.modify dn: dn, operations: operations
+      puts "Result: #{@ldap.get_operation_result.code}"
+      puts "Message: #{@ldap.get_operation_result.message}"
+    end
 
     puts "Eintrag geschrieben: #{entry[:nkz]}"
   end
