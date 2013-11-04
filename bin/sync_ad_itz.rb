@@ -247,6 +247,13 @@ private
       result.chars.to_a.inject('') { |res, i| res += i.to_s + "\000" }).chomp
   end
 
+  def random_string
+    '!' + SecureRandom.hex(20).to_s +
+    '+' + SecureRandom.hex(20).to_s.upcase +
+    '#'
+  end
+
+
   def build_checksum hash
     Digest::SHA1.hexdigest(
       hash.inject('') {|string,item| string + item.to_s})
