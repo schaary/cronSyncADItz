@@ -241,9 +241,10 @@ private
     @redis.sdiff UMT_CHECKSUM_SET, LDAP_CHECKSUM_SET
   end
 
-  def encode_password password
+  def as_unicodepw password
+    result = "\"" + password + "\""
     Base64.encode64(
-      password.chars.to_a.inject('') { |res, i| res += i.to_s + "\000" }).chomp
+      result.chars.to_a.inject('') { |res, i| res += i.to_s + "\000" }).chomp
   end
 
   def build_checksum hash
