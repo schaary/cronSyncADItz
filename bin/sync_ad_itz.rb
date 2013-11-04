@@ -223,6 +223,12 @@ private
     puts "Eintrag geschrieben: #{entry[:nkz]}"
   end
 
+  def get_account_by_checksum checksum
+    JSON.parse(
+      @redis.hget UMT_ACCOUNT_BY_CHECKSUM_HASH, checksum).
+      symbolize_keys
+  end
+
   def get_personal_dn uid
     @redis.hget LDAP_DN_BY_UID_HASH uid
   end
