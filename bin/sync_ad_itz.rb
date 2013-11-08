@@ -167,7 +167,7 @@ private
       sn:                 entry[:lastname],
       givenname:          entry[:firstname],
       cn:                 entry[:nkz],
-      useraccountcontrol: "546",
+      useraccountcontrol: "514",
       displayname:        "#{entry[:firstname]} #{entry[:lastname]}",
       userprincipalname:  "#{entry[:nkz]}@xd.uni-halle.de",
       carlicense:         entry[:checksum],
@@ -183,9 +183,10 @@ private
       puts "Message: #{@ldap.get_operation_result.message}"
     end
 
-    operations = [[:add, :unicodepw, as_unicodepw(random_string)]]
+    operations = [[:add, :unicodepwd, as_unicodepwd(random_string)]]
+    #operations = [[:add, :unicodepwd, 'IgBEAHIAUABpAGcAIQAiAA==']]
 
-    unless@ldap.modify dn: dn, operations: operations
+    unless @ldap.modify dn: dn, operations: operations
       puts "Result: #{@ldap.get_operation_result.code}"
       puts "Message: #{@ldap.get_operation_result.message}"
     end
@@ -200,7 +201,7 @@ private
       [:replace, :givenname, entry[:firstname]],
       [:replace, :sn, entry[:lastname]],
       [:replace, :mail, entry[:mail]],
-      [:replace, :cn, "#{entry[:firstname]} #{entry[:lastname]}"],
+      [:replace, :displayname, "#{entry[:firstname]} #{entry[:lastname]}"],
       [:replace, :carlicense, entry[:checksum]]]
 
     unless @ldap.modify dn: dn, operations: operations
@@ -229,10 +230,9 @@ private
     @redis.sdiff UMT_CHECKSUM_SET, LDAP_CHECKSUM_SET
   end
 
-  def as_unicodepw password
+  def as_unicodepwd password
     result = "\"" + password + "\""
-    Base64.encode64(
-      result.chars.to_a.inject('') { |res, i| res += i.to_s + "\000" }).chomp
+    result.chars.to_a.inject('') { |res, i| res += i.to_s + "\000" }
   end
 
   def random_string
