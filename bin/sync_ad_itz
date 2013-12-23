@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+# encoding: UTF-8
 
 require 'thor'
 require 'ruby-plsql'
@@ -26,7 +28,7 @@ class SyncADItz < Thor
   desc 'new','add all missing accounts to the ldap'
   def new
     cleanup_redis_db
-    fetch_umt
+    fetch_idm
     fetch_ldap
 
     counter = 0
@@ -43,7 +45,7 @@ class SyncADItz < Thor
   desc "update","update ldap accounts"
   def update
     cleanup_redis_db
-    fetch_umt
+    fetch_idm
     fetch_ldap
 
     unless 0 == missing_entries.size
@@ -94,7 +96,7 @@ private
     @redis.del UMT_ACCOUNT_BY_UID_HASH
   end
 
-  def fetch_umt
+  def fetch_idm
     connect_umt
     connect_redis
 
