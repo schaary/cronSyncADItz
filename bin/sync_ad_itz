@@ -28,8 +28,22 @@ class SyncADItz < Thor
   desc 'new','add all missing accounts to the ldap'
   def new
     cleanup_redis_db
-    fetch_idm
-    fetch_ldap
+
+    fetch_idm_pid = fork do 
+      puts "fetch idm"
+      fetch_idm
+      puts "idm exits successful"
+      exit 0
+    end
+
+    fetch_ldap_pid = fork do 
+      puts "fetch ad"
+      fetch_ldap
+      puts "ad exits successful"
+      exit 0
+    end
+
+    Process.waitall
 
     counter = 0
     missing_entries.each do |uid|
@@ -45,8 +59,22 @@ class SyncADItz < Thor
   desc "update","update ldap accounts"
   def update
     cleanup_redis_db
-    fetch_idm
-    fetch_ldap
+
+    # fetch_idm_pid = fork do 
+    #   puts "fetch idm"
+      fetch_idm
+      # puts "idm exits successful"
+      # exit 0
+    # end
+
+    # fetch_ldap_pid = fork do 
+    #   puts "fetch ad"
+      fetch_ldap
+      # puts "ad exits successful"
+      # exit 0
+    # end
+
+    # Process.waitall
 
     unless 0 == missing_entries.size
       puts "[ERROR] there are missing entries left."
@@ -65,11 +93,11 @@ class SyncADItz < Thor
 
 private
   def connect_redis
-    @redis ||= Redis.new
+    @redis = Redis.new
   end
 
   def connect_umt
-    plsql.connection = OCI8.new(
+    plsql.connection ||= OCI8.new(
       ENV.fetch('UMT_USER'),
       ENV.fetch('UMT_PASSWORD'),
       ENV.fetch('UMT_SID'))
@@ -77,7 +105,7 @@ private
 
   def connect_ldap
     unless @ldap
-      @ldap = Net::LDAP.new
+      @ldap ||= Net::LDAP.new
       @ldap.host = ENV.fetch('AD_ITZ_HOST')
       @ldap.port = 636
       @ldap.encryption :simple_tls
