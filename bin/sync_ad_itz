@@ -25,6 +25,22 @@ class SyncADItz < Thor
   UMT_ACCOUNT_BY_UID_HASH  = 'ad_itz:h_accounts_by_uid'
   UMT_ACCOUNT_BY_CHECKSUM_HASH  = 'ad_itz:h_accounts_by_checksum'
 
+  desc 'fetch','fetch'
+  def fetch
+    connect_umt
+
+    course_of_study = nil
+    records = nil
+    # plsql.student_account_pkg.courseOfStudy('abdzk') do |cursor|
+    plsql.student_account_pkg.courseOfStudy('nmaef') do |cursor|
+      records = cursor.fetch_all
+    end
+
+    course_of_study = records.inject([]) { |items,item|  items << item[0] }
+    course_of_study.sort.join ','
+
+  end
+
   desc 'new','add all missing accounts to the ldap'
   def new
     cleanup_redis_db
