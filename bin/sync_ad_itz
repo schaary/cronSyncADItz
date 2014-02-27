@@ -24,20 +24,31 @@ class SyncADItz < Thor
   UMT_UID_SET       = 'ad_itz:s_uid_umt'
   UMT_ACCOUNT_BY_UID_HASH  = 'ad_itz:h_accounts_by_uid'
   UMT_ACCOUNT_BY_CHECKSUM_HASH  = 'ad_itz:h_accounts_by_checksum'
+  UMT_COURSE_OF_STUDY = 'ad_itz:h_course_of_study'
 
   desc 'fetch','fetch'
   def fetch
-    connect_umt
+    cleanup_redis_db
+    connect_idm
+    connect_redis
 
     course_of_study = nil
     records = nil
-    # plsql.student_account_pkg.courseOfStudy('abdzk') do |cursor|
-    plsql.student_account_pkg.courseOfStudy('nmaef') do |cursor|
+
+    plsql.student_account_pkg.courseOfStudyList do |cursor|
       records = cursor.fetch_all
     end
 
-    course_of_study = records.inject([]) { |items,item|  items << item[0] }
-    course_of_study.sort.join ','
+    records.each do |record|
+      if @redis.hexists(UMT_COURSE_OF_STUDY,record[0])
+        value_old = @redis.hget UMT_COURSE_OF_STUDY,record[0]
+        value_new = value_old + ",#{record[1]}"
+      else
+        value_new = record[1]
+      end
+
+      @redis.hset UMT_COURSE_OF_STUDY,record[0],value_new
+    end
 
   end
 
@@ -112,7 +123,7 @@ private
     @redis = Redis.new
   end
 
-  def connect_umt
+  def connect_idm
     plsql.connection ||= OCI8.new(
       ENV.fetch('UMT_USER'),
       ENV.fetch('UMT_PASSWORD'),
@@ -138,10 +149,11 @@ private
     @redis.del UMT_UID_SET
     @redis.del UMT_ACCOUNT_BY_CHECKSUM_HASH
     @redis.del UMT_ACCOUNT_BY_UID_HASH
+    @redis.del UMT_COURSE_OF_STUDY
   end
 
   def fetch_idm
-    connect_umt
+    connect_idm
     connect_redis
 
     records = nil
