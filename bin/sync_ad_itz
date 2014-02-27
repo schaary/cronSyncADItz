@@ -26,51 +26,29 @@ class SyncADItz < Thor
   UMT_ACCOUNT_BY_CHECKSUM_HASH  = 'ad_itz:h_accounts_by_checksum'
   UMT_COURSE_OF_STUDY = 'ad_itz:h_course_of_study'
 
-  desc 'fetch','fetch'
-  def fetch
-    cleanup_redis_db
-    connect_idm
-    connect_redis
-
-    course_of_study = nil
-    records = nil
-
-    plsql.student_account_pkg.courseOfStudyList do |cursor|
-      records = cursor.fetch_all
-    end
-
-    records.each do |record|
-      if @redis.hexists(UMT_COURSE_OF_STUDY,record[0])
-        value_old = @redis.hget UMT_COURSE_OF_STUDY,record[0]
-        value_new = value_old + ",#{record[1]}"
-      else
-        value_new = record[1]
-      end
-
-      @redis.hset UMT_COURSE_OF_STUDY,record[0],value_new
-    end
-
-  end
-
   desc 'new','add all missing accounts to the ldap'
   def new
     cleanup_redis_db
 
-    fetch_idm_pid = fork do 
+    # this list must be fetched _before_ we are going to fetch the accounts
+    fetch_course_of_study_list
+
+#    fetch_idm_pid = fork do 
       puts "fetch idm"
       fetch_idm
       puts "idm exits successful"
-      exit 0
-    end
+      # exit 0
+    # end
 
-    fetch_ldap_pid = fork do 
+    # fetch_ldap_pid = fork do 
       puts "fetch ad"
       fetch_ldap
       puts "ad exits successful"
-      exit 0
-    end
+      # exit 0
+    # end
 
-    Process.waitall
+
+#    Process.waitall
 
     counter = 0
     missing_entries.each do |uid|
@@ -87,6 +65,7 @@ class SyncADItz < Thor
   def update
     cleanup_redis_db
 
+    fetch_course_of_study_list
     # fetch_idm_pid = fork do 
     #   puts "fetch idm"
       fetch_idm
@@ -160,6 +139,9 @@ private
     plsql.ad_itz_pkg.getAccounts { |cursor| records = cursor.fetch_all }
 
     records.each do |record|
+      cof = course_of_study record[2]
+      record << cof unless cof.nil?
+
       checksum = build_checksum record
 
       entry = {
@@ -168,6 +150,8 @@ private
         nkz:       record[2],
         mail:      record[3],
         checksum:  checksum}
+
+      entry.merge!({ course_of_study: cof }) unless cof.nil?
 
       @redis.hmset(
         UMT_ACCOUNT_BY_CHECKSUM_HASH,
@@ -236,6 +220,8 @@ private
         "organizationalPerson",
         "user"]}
 
+    attributes.merge!({ description: entry[:description] })
+
     unless @ldap.add dn: dn, attributes: attributes
       puts "Result: #{@ldap.get_operation_result.code}"
       puts "Message: #{@ldap.get_operation_result.message}"
@@ -262,12 +248,40 @@ private
       [:replace, :displayname, "#{entry[:firstname]} #{entry[:lastname]}"],
       [:replace, :carlicense, entry[:checksum]]]
 
+    operations << [:replace, :description, entry[:course_of_study]] unless entry.has_key?(:description)
+
     unless @ldap.modify dn: dn, operations: operations
       puts "Result: #{@ldap.get_operation_result.code}"
       puts "Message: #{@ldap.get_operation_result.message}"
     end
 
     puts "Eintrag geschrieben: #{entry[:nkz]}"
+  end
+
+  def fetch_course_of_study_list
+    connect_idm
+    connect_redis
+
+    records = nil
+
+    plsql.student_account_pkg.courseOfStudyList do |cursor|
+      records = cursor.fetch_all
+    end
+
+    records.each do |record|
+      if @redis.hexists(UMT_COURSE_OF_STUDY,record[0])
+        value_old = @redis.hget UMT_COURSE_OF_STUDY,record[0]
+        value_new = value_old + ",#{record[1]}"
+      else
+        value_new = record[1]
+      end
+
+      @redis.hset UMT_COURSE_OF_STUDY,record[0],value_new
+    end
+  end
+
+  def course_of_study uid
+    @redis.hget UMT_COURSE_OF_STUDY, uid
   end
 
   def get_account_by_checksum checksum
