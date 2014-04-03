@@ -151,7 +151,7 @@ private
         mail:      record[3],
         checksum:  checksum}
 
-      entry.merge!({ course_of_study: cof }) unless cof.nil?
+      entry.merge!({ description: cof }) unless cof.nil?
 
       @redis.hmset(
         UMT_ACCOUNT_BY_CHECKSUM_HASH,
@@ -220,7 +220,7 @@ private
         "organizationalPerson",
         "user"]}
 
-    attributes.merge!({ description: entry[:description] })
+    attributes.merge!({ description: entry[:description] }) if entry.has_key?(:description)
 
     unless @ldap.add dn: dn, attributes: attributes
       puts "Result: #{@ldap.get_operation_result.code}"
@@ -248,7 +248,7 @@ private
       [:replace, :displayname, "#{entry[:firstname]} #{entry[:lastname]}"],
       [:replace, :carlicense, entry[:checksum]]]
 
-    operations << [:replace, :description, entry[:course_of_study]] unless entry.has_key?(:description)
+    operations << [:replace, :description, entry[:description]] if entry.has_key?(:description)
 
     unless @ldap.modify dn: dn, operations: operations
       puts "Result: #{@ldap.get_operation_result.code}"
