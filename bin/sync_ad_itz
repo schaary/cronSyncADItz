@@ -32,23 +32,8 @@ class SyncADItz < Thor
 
     # this list must be fetched _before_ we are going to fetch the accounts
     fetch_course_of_study_list
-
-#    fetch_idm_pid = fork do 
-      puts "fetch idm"
-      fetch_idm
-      puts "idm exits successful"
-      # exit 0
-    # end
-
-    # fetch_ldap_pid = fork do 
-      puts "fetch ad"
-      fetch_ldap
-      puts "ad exits successful"
-      # exit 0
-    # end
-
-
-#    Process.waitall
+    fetch_idm
+    fetch_ldap
 
     counter = 0
     missing_entries.each do |uid|
@@ -66,21 +51,8 @@ class SyncADItz < Thor
     cleanup_redis_db
 
     fetch_course_of_study_list
-    # fetch_idm_pid = fork do 
-    #   puts "fetch idm"
-      fetch_idm
-      # puts "idm exits successful"
-      # exit 0
-    # end
-
-    # fetch_ldap_pid = fork do 
-    #   puts "fetch ad"
-      fetch_ldap
-      # puts "ad exits successful"
-      # exit 0
-    # end
-
-    # Process.waitall
+    fetch_idm
+    fetch_ldap
 
     unless 0 == missing_entries.size
       puts "[ERROR] there are missing entries left."
@@ -149,7 +121,9 @@ private
         firstname: record[1],
         nkz:       record[2],
         mail:      record[3],
-        checksum:  checksum}
+        uidNumber: record[5],
+        checksum:  checksum
+      }
 
       entry.merge!({ description: cof }) unless cof.nil?
 
@@ -214,11 +188,14 @@ private
       userprincipalname:  "#{entry[:nkz]}@xd.uni-halle.de",
       carlicense:         entry[:checksum],
       mail:               "#{entry[:mail]}",
+      uidnumber:          "#{entry[:uidNumber]}",
       objectClass: [
         "top",
         "person",
         "organizationalPerson",
-        "user"]}
+        "user"
+      ]
+    }
 
     attributes.merge!({ description: entry[:description] }) if entry.has_key?(:description)
 
@@ -246,7 +223,9 @@ private
       [:replace, :sn, entry[:lastname]],
       [:replace, :mail, entry[:mail]],
       [:replace, :displayname, "#{entry[:firstname]} #{entry[:lastname]}"],
-      [:replace, :carlicense, entry[:checksum]]]
+      [:replace, :uidnumber, "#{entry[:uidNumber]}"],
+      [:replace, :carlicense, entry[:checksum]]
+    ]
 
     operations << [:replace, :description, entry[:description]] if entry.has_key?(:description)
 
