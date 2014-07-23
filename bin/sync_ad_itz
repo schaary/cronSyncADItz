@@ -157,7 +157,7 @@ private
       'krbtgt',
       'Gast',
       'UNI-HALLE.DE$',
-      'TAC001'
+      'TAC0001'
     ]
 
     @ldap.search(base: basedn, filter: filter, attributes: attr) do |entry|
