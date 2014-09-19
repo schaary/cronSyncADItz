@@ -8,12 +8,12 @@ require 'net-ldap'
 require 'awesome_print'
 require 'digest/sha1'
 require 'json'
-require 'pry'
+#require 'pry'
 require 'active_support'
 require 'active_support/core_ext'
 require 'base64'
 require 'securerandom'
-require 'pry'
+#require 'pry'
 
 class SyncADItz < Thor
 
