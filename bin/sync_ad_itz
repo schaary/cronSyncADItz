@@ -8,7 +8,7 @@ require 'net-ldap'
 require 'awesome_print'
 require 'digest/sha1'
 require 'json'
-#require 'pry'
+require 'pry'
 require 'active_support'
 require 'active_support/core_ext'
 require 'base64'
@@ -115,15 +115,16 @@ private
       cof = course_of_study record[2]
       record << cof unless cof.nil?
 
-      checksum = build_checksum record
+      checksum = build_checksum record[0..5]
 
       entry = {
-        lastname:  record[0],
-        firstname: record[1],
-        nkz:       record[2],
-        mail:      record[3],
-        uidNumber: record[5],
-        checksum:  checksum
+        lastname:     record[0],
+        firstname:    record[1],
+        nkz:          record[2],
+        mail:         record[3],
+        uidNumber:    record[5],
+        userPassword: record[6],
+        checksum:     checksum
       }
 
       entry.merge!({ description: cof }) unless cof.nil?
@@ -171,6 +172,13 @@ private
     end
   end
 
+  # Schreiben eines neuen Eintrages
+  #
+  # Ein neuer Eintrag muss in mehreren Schritten eingetragen werden
+  #   1. Eintrag aller Grunddaten, als disabled account (useraccountcontrol 514)
+  #   2. Eintrag des Passwortes des Accounts
+  #   3. Aktivierung des Accounts, Passwort läuft nie ab
+  #      (useraccountcontrol 66046)
   def write_new_entry uid
     connect_ldap
     connect_redis
@@ -205,8 +213,15 @@ private
       puts "Message: #{@ldap.get_operation_result.message}"
     end
 
-    operations = [[:add, :unicodepwd, as_unicodepwd(random_string)]]
+    operations = [[:add, :unicodepwd, as_unicodepwd(entry[:userPassword])]]
     #operations = [[:add, :unicodepwd, 'IgBEAHIAUABpAGcAIQAiAA==']]
+   
+    unless @ldap.modify dn: dn, operations: operations
+      puts "Result: #{@ldap.get_operation_result.code}"
+      puts "Message: #{@ldap.get_operation_result.message}"
+    end
+
+    operations = [[:add, :useraccountcontrol, "66048"]]
 
     unless @ldap.modify dn: dn, operations: operations
       puts "Result: #{@ldap.get_operation_result.code}"
