@@ -299,7 +299,9 @@ private
 
   def as_unicodepwd password
     result = "\"" + password + "\""
-    result.chars.to_a.inject('') { |res, i| res += i.to_s + "\000" }
+    Base64.
+      encode64(result.chars.to_a.inject('') { |res, i| res += i.to_s + "\000" }).
+      chomp
   end
 
   def random_string
