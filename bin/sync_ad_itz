@@ -8,7 +8,7 @@ require 'net-ldap'
 require 'awesome_print'
 require 'digest/sha1'
 require 'json'
-require 'pry'
+#require 'pry'
 require 'active_support'
 require 'active_support/core_ext'
 require 'base64'
@@ -221,7 +221,7 @@ private
       puts "Message: #{@ldap.get_operation_result.message}"
     end
 
-    operations = [[:add, :useraccountcontrol, "66048"]]
+    operations = [[:replace, :useraccountcontrol, "66048"]]
 
     unless @ldap.modify dn: dn, operations: operations
       puts "Result: #{@ldap.get_operation_result.code}"
