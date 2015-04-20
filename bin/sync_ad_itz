@@ -115,15 +115,16 @@ private
       cof = course_of_study record[2]
       record << cof unless cof.nil?
 
-      checksum = build_checksum record[0..5]
+      checksum = build_checksum record[0..7]
 
       entry = {
-        lastname:     record[0],
-        firstname:    record[1],
-        nkz:          record[2],
-        mail:         record[3],
-        uidNumber:    record[5],
-        userPassword: record[6],
+        lastname:      record[0],
+        firstname:     record[1],
+        nkz:           record[2],
+        mail:          record[3],
+        uidNumber:     record[5],
+        userPassword:  record[6],
+        account_state: record[7],
         checksum:     checksum
       }
 
@@ -198,6 +199,7 @@ private
       carlicense:         entry[:checksum],
       mail:               "#{entry[:mail]}",
       uidnumber:          "#{entry[:uidNumber]}",
+      comment:            "#{entry[:account_state]}",
       objectClass: [
         "top",
         "person",
@@ -240,6 +242,7 @@ private
       [:replace, :mail, entry[:mail]],
       [:replace, :displayname, "#{entry[:firstname]} #{entry[:lastname]}"],
       [:replace, :uidnumber, "#{entry[:uidNumber]}"],
+      [:replace, :comment, "#{entry[:account_state]}"],
       [:replace, :carlicense, entry[:checksum]]
     ]
 
