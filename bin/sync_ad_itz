@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# encoding: UTF-8
+# encoding: utf-8
 
 require 'thor'
 require 'ruby-plsql'
@@ -115,7 +115,7 @@ private
       cof = course_of_study record[2]
       record << cof unless cof.nil?
 
-      checksum = build_checksum record[0..7]
+      checksum = build_checksum record[0..8]
 
       entry = {
         lastname:      record[0],
@@ -123,8 +123,9 @@ private
         nkz:           record[2],
         mail:          record[3],
         uidNumber:     record[5],
-        userPassword:  record[6],
-        account_state: record[7],
+        gidNumber:     record[6],
+        userPassword:  record[7],
+        account_state: record[8],
         checksum:     checksum
       }
 
@@ -199,6 +200,7 @@ private
       carlicense:         entry[:checksum],
       mail:               "#{entry[:mail]}",
       uidnumber:          "#{entry[:uidNumber]}",
+      gidnumber:          "#{entry[:gidNumber]}",
       comment:            "#{entry[:account_state]}",
       objectClass: [
         "top",
@@ -242,6 +244,7 @@ private
       [:replace, :mail, entry[:mail]],
       [:replace, :displayname, "#{entry[:firstname]} #{entry[:lastname]}"],
       [:replace, :uidnumber, "#{entry[:uidNumber]}"],
+      [:replace, :gidnumber, "#{entry[:gidNumber]}"],
       [:replace, :comment, "#{entry[:account_state]}"],
       [:replace, :carlicense, entry[:checksum]]
     ]
