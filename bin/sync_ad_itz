@@ -201,7 +201,7 @@ private
       mail:               "#{entry[:mail]}",
       uidnumber:          "#{entry[:uidNumber]}",
       gidnumber:          "#{entry[:gidNumber]}",
-      comment:            "#{entry[:account_state]}",
+      #comment:            "#{entry[:account_state]}",
       objectClass: [
         "top",
         "person",
@@ -245,7 +245,7 @@ private
       [:replace, :displayname, "#{entry[:firstname]} #{entry[:lastname]}"],
       [:replace, :uidnumber, "#{entry[:uidNumber]}"],
       [:replace, :gidnumber, "#{entry[:gidNumber]}"],
-      [:replace, :comment, "#{entry[:account_state]}"],
+      #[:replace, :comment, "#{entry[:account_state]}"],
       [:replace, :carlicense, entry[:checksum]]
     ]
 
